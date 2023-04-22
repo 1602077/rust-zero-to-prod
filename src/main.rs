@@ -1,7 +1,7 @@
-use sqlx::{Connection, PgConnection};
 use std::net::TcpListener;
-use z2p::configuration::get_config;
-use z2p::startup;
+
+use sqlx::{Connection, PgConnection};
+use z2p::{configuration::get_config, startup};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {

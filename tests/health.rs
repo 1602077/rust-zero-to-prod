@@ -1,5 +1,6 @@
-use sqlx::{Connection, PgConnection};
 use std::net::TcpListener;
+
+use sqlx::{Connection, PgConnection};
 use z2p::{configuration::get_config, startup::run};
 
 // spawn_app launches application in the background.
