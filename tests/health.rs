@@ -1,5 +1,6 @@
+use sqlx::{Connection, PgConnection};
 use std::net::TcpListener;
-use z2p::startup::run;
+use z2p::{configuration::get_config, startup::run};
 
 // spawn_app launches application in the background.
 fn spawn_app() -> String {
@@ -29,7 +30,15 @@ async fn health_check_works() {
 
 #[tokio::test]
 async fn subscribe_returns_a_200_for_valid_form_data() {
+    // setup
     let address = spawn_app();
+    let config = get_config().expect("failed to read config file");
+    let connection_addr = config.database.connection_string();
+
+    let mut connection = PgConnection::connect(&connection_addr)
+        .await
+        .expect("failed to connect to postgres");
+
     let client = reqwest::Client::new();
 
     let body = "name=le%20guin&email=urlsula_le_guin%40gmail.com";
@@ -42,7 +51,15 @@ async fn subscribe_returns_a_200_for_valid_form_data() {
         .await
         .expect("failed to execute request");
 
-    assert_eq!(200, resp.status().as_u16())
+    assert_eq!(200, resp.status().as_u16());
+
+    let saved = sqlx::query!("SELECT email, name FROM subscriptions",)
+        .fetch_one(&mut connection)
+        .await
+        .expect("failed to fetch saved subscription");
+
+    assert_eq!(saved.email, "urlsula_le_guin@gmail.com");
+    assert_eq!(saved.name, "le guin");
 }
 
 #[tokio::test]
