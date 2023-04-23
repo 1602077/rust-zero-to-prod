@@ -1,11 +1,10 @@
 use std::net::TcpListener;
 
 use once_cell::sync::Lazy;
-use secrecy::ExposeSecret;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
 use z2p::{
-    configuration::{get_config, DatabaseSettings},
+    configuration::{get_config, DatabaseSettings, Settings},
     startup::run,
     telemetry::{get_subscriber, init_subscriber},
 };
@@ -40,7 +39,7 @@ pub struct TestApp {
 }
 
 // spawn_app launches application in the background.
-async fn spawn_app() -> TestApp {
+async fn spawn_app(config: &Settings) -> TestApp {
     // the first time initialise is called the code in tracing is invoked otherwise we skip.
     Lazy::force(&TRACING);
 
@@ -48,9 +47,6 @@ async fn spawn_app() -> TestApp {
         .expect("failed to bind to random port");
     let port = listener.local_addr().unwrap().port();
     let addr = format!("http://127.0.0.1:{}", port);
-
-    let mut config = get_config().expect("failed to read configuration file");
-    config.database.database_name = Uuid::new_v4().to_string();
 
     let conn_pool = configure_db(&config.database).await;
 
@@ -66,11 +62,9 @@ async fn spawn_app() -> TestApp {
 }
 
 pub async fn configure_db(config: &DatabaseSettings) -> PgPool {
-    let mut connection = PgConnection::connect(
-        &config.connection_string_without_db().expose_secret(),
-    )
-    .await
-    .expect("failed to connect to postgres");
+    let mut connection = PgConnection::connect_with(&config.without_db())
+        .await
+        .expect("failed to connect to postgres");
 
     connection
         .execute(
@@ -78,11 +72,10 @@ pub async fn configure_db(config: &DatabaseSettings) -> PgPool {
         )
         .await
         .expect("failed to create database");
-
-    let connection_pool =
-        PgPool::connect(&config.connection_string().expose_secret())
-            .await
-            .expect("failed to create postgres connection pool");
+    println!("pool config {:#?}", config.with_db());
+    let connection_pool = PgPool::connect_with(config.with_db())
+        .await
+        .expect("failed to create postgres connection pool");
 
     sqlx::migrate!("./migrations")
         .run(&connection_pool)
@@ -94,7 +87,10 @@ pub async fn configure_db(config: &DatabaseSettings) -> PgPool {
 
 #[tokio::test]
 async fn health_check_works() {
-    let app = spawn_app().await;
+    let mut config = get_config().expect("failed to read configuration file");
+    config.database.database_name = Uuid::new_v4().to_string();
+
+    let app = spawn_app(&config).await;
     let client = reqwest::Client::new();
 
     let resp = client
@@ -109,14 +105,10 @@ async fn health_check_works() {
 
 #[tokio::test]
 async fn subscribe_returns_a_200_for_valid_form_data() {
-    let app = spawn_app().await;
-    let config = get_config().expect("failed to read config file");
-    let connection_addr = config.database.connection_string();
+    let mut config = get_config().expect("failed to read config file");
+    config.database.database_name = Uuid::new_v4().to_string();
 
-    let mut connection =
-        PgConnection::connect(&connection_addr.expose_secret())
-            .await
-            .expect("failed to connect to postgres");
+    let app = spawn_app(&config).await;
 
     let client = reqwest::Client::new();
 
@@ -132,8 +124,8 @@ async fn subscribe_returns_a_200_for_valid_form_data() {
 
     assert_eq!(200, resp.status().as_u16());
 
-    let saved = sqlx::query!("SELECT email, name FROM subscriptions",)
-        .fetch_one(&mut connection)
+    let saved = sqlx::query!(r#"SELECT email, name FROM subscriptions"#)
+        .fetch_one(&app.pool)
         .await
         .expect("failed to fetch saved subscription");
 
@@ -143,7 +135,10 @@ async fn subscribe_returns_a_200_for_valid_form_data() {
 
 #[tokio::test]
 async fn subscribe_returns_a_400_when_data_is_missing() {
-    let app = spawn_app().await;
+    let mut config = get_config().expect("failed to read config file");
+    config.database.database_name = Uuid::new_v4().to_string();
+
+    let app = spawn_app(&config).await;
     let client = reqwest::Client::new();
 
     let test_cases = vec![
