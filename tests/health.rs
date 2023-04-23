@@ -18,10 +18,18 @@ static TRACING: Lazy<()> = Lazy::new(|| {
     // If you do need them use:
     // # `TEST_LOG=1 cargo test health_check_works | bunyan`
     if std::env::var("TEST_LOG").is_ok() {
-        let subscriber = get_subscriber(subscriber_name, default_filter_level, std::io::stdout);
+        let subscriber = get_subscriber(
+            subscriber_name,
+            default_filter_level,
+            std::io::stdout,
+        );
         init_subscriber(subscriber);
     } else {
-        let subscriber = get_subscriber(subscriber_name, default_filter_level, std::io::sink);
+        let subscriber = get_subscriber(
+            subscriber_name,
+            default_filter_level,
+            std::io::sink,
+        );
         init_subscriber(subscriber);
     }
 });
@@ -36,7 +44,8 @@ async fn spawn_app() -> TestApp {
     // the first time initialise is called the code in tracing is invoked otherwise we skip.
     Lazy::force(&TRACING);
 
-    let listener = TcpListener::bind("127.0.0.1:0").expect("failed to bind to random port");
+    let listener = TcpListener::bind("127.0.0.1:0")
+        .expect("failed to bind to random port");
     let port = listener.local_addr().unwrap().port();
     let addr = format!("http://127.0.0.1:{}", port);
 
@@ -45,7 +54,8 @@ async fn spawn_app() -> TestApp {
 
     let conn_pool = configure_db(&config.database).await;
 
-    let server = run(listener, conn_pool.clone()).expect("failed to bind address");
+    let server =
+        run(listener, conn_pool.clone()).expect("failed to bind address");
 
     let _ = tokio::spawn(server);
 
@@ -56,19 +66,23 @@ async fn spawn_app() -> TestApp {
 }
 
 pub async fn configure_db(config: &DatabaseSettings) -> PgPool {
-    let mut connection =
-        PgConnection::connect(&config.connection_string_without_db().expose_secret())
-            .await
-            .expect("failed to connect to postgres");
+    let mut connection = PgConnection::connect(
+        &config.connection_string_without_db().expose_secret(),
+    )
+    .await
+    .expect("failed to connect to postgres");
 
     connection
-        .execute(format!(r#"CREATE DATABASE "{}";"#, config.database_name).as_str())
+        .execute(
+            format!(r#"CREATE DATABASE "{}";"#, config.database_name).as_str(),
+        )
         .await
         .expect("failed to create database");
 
-    let connection_pool = PgPool::connect(&config.connection_string().expose_secret())
-        .await
-        .expect("failed to create postgres connection pool");
+    let connection_pool =
+        PgPool::connect(&config.connection_string().expose_secret())
+            .await
+            .expect("failed to create postgres connection pool");
 
     sqlx::migrate!("./migrations")
         .run(&connection_pool)
@@ -99,9 +113,10 @@ async fn subscribe_returns_a_200_for_valid_form_data() {
     let config = get_config().expect("failed to read config file");
     let connection_addr = config.database.connection_string();
 
-    let mut connection = PgConnection::connect(&connection_addr)
-        .await
-        .expect("failed to connect to postgres");
+    let mut connection =
+        PgConnection::connect(&connection_addr.expose_secret())
+            .await
+            .expect("failed to connect to postgres");
 
     let client = reqwest::Client::new();
 
