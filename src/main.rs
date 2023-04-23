@@ -1,5 +1,6 @@
 use std::net::TcpListener;
 
+use secrecy::ExposeSecret;
 use sqlx::PgPool;
 use z2p::{configuration::get_config, startup, telemetry};
 
@@ -13,7 +14,7 @@ async fn main() -> std::io::Result<()> {
     let addr = format!("127.0.0.1:{}", config.application_port);
 
     let listener = TcpListener::bind(addr).expect("failed to bind to port");
-    let connection_pool = PgPool::connect(&config.database.connection_string())
+    let connection_pool = PgPool::connect(&config.database.connection_string().expose_secret())
         .await
         .expect("failed to connect to postgres");
 
