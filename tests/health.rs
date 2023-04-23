@@ -1,11 +1,29 @@
 use std::net::TcpListener;
 
+use once_cell::sync::Lazy;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
 use z2p::{
     configuration::{get_config, DatabaseSettings},
     startup::run,
+    telemetry::{get_subscriber, init_subscriber},
 };
+
+static TRACING: Lazy<()> = Lazy::new(|| {
+    let default_filter_level = "info".to_string();
+    let subscriber_name = "test".to_string();
+
+    // Use of a sink allow for logs to be dumped by default when running tests.
+    // If you do need them use:
+    // # `TEST_LOG=1 cargo test health_check_works | bunyan`
+    if std::env::var("TEST_LOG").is_ok() {
+        let subscriber = get_subscriber(subscriber_name, default_filter_level, std::io::stdout);
+        init_subscriber(subscriber);
+    } else {
+        let subscriber = get_subscriber(subscriber_name, default_filter_level, std::io::sink);
+        init_subscriber(subscriber);
+    }
+});
 
 pub struct TestApp {
     pub address: String,
@@ -14,6 +32,9 @@ pub struct TestApp {
 
 // spawn_app launches application in the background.
 async fn spawn_app() -> TestApp {
+    // the first time initialise is called the code in tracing is invoked otherwise we skip.
+    Lazy::force(&TRACING);
+
     let listener = TcpListener::bind("127.0.0.1:0").expect("failed to bind to random port");
     let port = listener.local_addr().unwrap().port();
     let addr = format!("http://127.0.0.1:{}", port);

@@ -1,10 +1,14 @@
 use std::net::TcpListener;
 
 use sqlx::PgPool;
-use z2p::{configuration::get_config, startup};
+use z2p::{configuration::get_config, startup, telemetry};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
+    // Redirect all log events to our subscriber.
+    let subscriber = telemetry::get_subscriber("zero2prod".into(), "info".into(), std::io::stdout);
+    telemetry::init_subscriber(subscriber);
+
     let config = get_config().expect("failed to read config");
     let addr = format!("127.0.0.1:{}", config.application_port);
 
