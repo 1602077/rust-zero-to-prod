@@ -134,6 +134,38 @@ async fn subscribe_returns_a_200_for_valid_form_data() {
 }
 
 #[tokio::test]
+async fn subscribe_returns_a_400_when_fields_are_present_but_empty() {
+    let mut config = get_config().expect("failed to read configuration file");
+    config.database.database_name = Uuid::new_v4().to_string();
+
+    let app = spawn_app(&config).await;
+    let client = reqwest::Client::new();
+
+    let test_cases = vec![
+        ("name=&email=email%40@mail.com", "empty name"),
+        ("name=&helloemail=", "empty email"),
+        ("name=&helloemail=not-an-email", "invalid email"),
+    ];
+
+    for (body, desc) in test_cases {
+        let resp = client
+            .post(&format!("{}/subscriptions", &app.address))
+            .header("Content-Type", "application/x-www-form-urlencoded")
+            .body(body)
+            .send()
+            .await
+            .expect("failed to execute request.");
+
+        assert_eq!(
+            200,
+            resp.status().as_u16(),
+            "api did not return a 200 for payload {}",
+            desc
+        )
+    }
+}
+
+#[tokio::test]
 async fn subscribe_returns_a_400_when_data_is_missing() {
     let mut config = get_config().expect("failed to read config file");
     config.database.database_name = Uuid::new_v4().to_string();
