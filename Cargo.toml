@@ -42,4 +42,5 @@ features = [
 
 
 [dev-dependencies]
+claims = "0.7.1"
 reqwest = "0.11"

@@ -10,7 +10,7 @@ DB_HOST=${POSTGRES_HOST:=localhost}
 DATABASE_URL=postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}
 export DATABASE_URL
 
-[ ! -x "$(command -v psql)" ] && >&2 echo "ERROR: psql is not installed"
+[ ! -x "$(command -v psql)" ] && (>&2 echo "ERROR: psql is not installed"; exit 1)
 [ ! -x "$(command -v sqlx)" ] && cargo install --version="~0.6" sqlx-cli --no-default-features --features rustls,postgres;
 
 if [[ -z "${SKIP_DOCKER}" ]]; then
