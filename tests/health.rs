@@ -5,6 +5,7 @@ use sqlx::{Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
 use z2p::{
     configuration::{get_config, DatabaseSettings, Settings},
+    email_client::EmailClient,
     startup::run,
     telemetry::{get_subscriber, init_subscriber},
 };
@@ -50,8 +51,13 @@ async fn spawn_app(config: &Settings) -> TestApp {
 
     let conn_pool = configure_db(&config.database).await;
 
-    let server =
-        run(listener, conn_pool.clone()).expect("failed to bind address");
+    let sender_email =
+        config.email.sender().expect("inavlid sender email address");
+    let email_client =
+        EmailClient::new(config.email.base_url.clone(), sender_email);
+
+    let server = run(listener, conn_pool.clone(), email_client)
+        .expect("failed to bind address");
 
     let _ = tokio::spawn(server);
 

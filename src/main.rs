@@ -1,7 +1,9 @@
 use std::net::TcpListener;
 
 use sqlx::postgres::PgPoolOptions;
-use z2p::{configuration::get_config, startup, telemetry};
+use z2p::{
+    configuration::get_config, email_client::EmailClient, startup, telemetry,
+};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
@@ -21,5 +23,9 @@ async fn main() -> std::io::Result<()> {
         .acquire_timeout(std::time::Duration::from_secs(2))
         .connect_lazy_with(config.database.with_db());
 
-    startup::run(listener, connection_pool)?.await
+    let sender_email =
+        config.email.sender().expect("inavlid sender email address");
+    let email_client = EmailClient::new(config.email.base_url, sender_email);
+
+    startup::run(listener, connection_pool, email_client)?.await
 }
