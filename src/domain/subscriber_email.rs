@@ -44,9 +44,21 @@ mod tests {
         assert_err!(SubscriberEmail::parse(email));
     }
 
-    #[test]
-    fn valid_emails_are_parsed_successfully() {
-        let email: String = SafeEmail().fake();
-        claims::assert_ok!(SubscriberEmail::parse(email));
+    #[derive(Debug, Clone)]
+    struct ValidExmailFixture(pub String);
+
+    impl quickcheck::Arbitrary for ValidExmailFixture {
+        fn arbitrary<G: quickcheck::Gen>(g: &mut G) -> Self {
+            let email = SafeEmail().fake_with_rng(g);
+            Self(email)
+        }
+    }
+
+    #[quickcheck_macros::quickcheck]
+    fn valid_emails_are_parsed_successfully(
+        valid_email: ValidExmailFixture,
+    ) -> bool {
+        dbg!(&valid_email.0);
+        SubscriberEmail::parse(valid_email.0).is_ok()
     }
 }
