@@ -53,8 +53,12 @@ async fn spawn_app(config: &Settings) -> TestApp {
 
     let sender_email =
         config.email.sender().expect("inavlid sender email address");
-    let email_client =
-        EmailClient::new(config.email.base_url.clone(), sender_email);
+
+    let email_client = EmailClient::new(
+        config.email.base_url.clone(),
+        sender_email,
+        config.email.auth_token.to_owned(),
+    );
 
     let server = run(listener, conn_pool.clone(), email_client)
         .expect("failed to bind address");
