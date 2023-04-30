@@ -41,7 +41,7 @@ impl DatabaseSettings {
         PgConnectOptions::new()
             .host(&self.host)
             .username(&self.username)
-            .password(&self.password.expose_secret())
+            .password(self.password.expose_secret())
             .port(self.port)
             .ssl_mode(ssl_mode)
     }
@@ -102,10 +102,8 @@ pub fn get_config() -> Result<Settings, config::ConfigError> {
     let config_path = base_path.join("config");
 
     // default to local environment is APP_ENVIRONMENT is not set.
-    let environment: String = std::env::var("APP_ENVIRONMENT")
-        .unwrap_or_else(|_| "local".into())
-        .try_into()
-        .expect("failed to parse APP_ENVIRONMENT");
+    let environment: String =
+        std::env::var("APP_ENVIRONMENT").unwrap_or_else(|_| "local".into());
 
     let environment_file = format!("{}.yaml", environment.as_str());
 
