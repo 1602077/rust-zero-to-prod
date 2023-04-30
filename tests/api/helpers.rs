@@ -7,11 +7,6 @@ use z2p::{
     telemetry::{get_subscriber, init_subscriber},
 };
 
-pub struct TestApp {
-    pub address: String,
-    pub pool: PgPool,
-}
-
 static TRACING: Lazy<()> = Lazy::new(|| {
     let default_filter_level = "info".to_string();
     let subscriber_name = "test".to_string();
@@ -86,4 +81,29 @@ async fn configure_db(config: &DatabaseSettings) -> PgPool {
         .expect("failed to migrate database");
 
     connection_pool
+}
+
+pub struct TestApp {
+    pub address: String,
+    pub pool: PgPool,
+}
+
+impl TestApp {
+    pub async fn health(&self) -> reqwest::Response {
+        reqwest::Client::new()
+            .get(&format!("{}/health", &self.address))
+            .send()
+            .await
+            .expect("failed to execute request.")
+    }
+
+    pub async fn post_subscriptions(&self, body: String) -> reqwest::Response {
+        reqwest::Client::new()
+            .post(&format!("{}/subscriptions", &self.address))
+            .header("Content-Type", "application/x-www-form-urlencoded")
+            .body(body)
+            .send()
+            .await
+            .expect("failed to execute request")
+    }
 }
