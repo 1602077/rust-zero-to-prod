@@ -8,7 +8,7 @@ async fn subscribe_returns_a_200_for_valid_form_data() {
     let mut config = get_config().expect("failed to read config file");
     config.database.database_name = Uuid::new_v4().to_string();
 
-    let app = spawn_app(&config).await;
+    let app = spawn_app().await;
 
     let client = reqwest::Client::new();
 
@@ -38,7 +38,7 @@ async fn subscribe_returns_a_400_when_fields_are_present_but_empty() {
     let mut config = get_config().expect("failed to read configuration file");
     config.database.database_name = Uuid::new_v4().to_string();
 
-    let app = spawn_app(&config).await;
+    let app = spawn_app().await;
     let client = reqwest::Client::new();
 
     let test_cases = vec![
@@ -70,7 +70,7 @@ async fn subscribe_returns_a_400_when_data_is_missing() {
     let mut config = get_config().expect("failed to read config file");
     config.database.database_name = Uuid::new_v4().to_string();
 
-    let app = spawn_app(&config).await;
+    let app = spawn_app().await;
     let client = reqwest::Client::new();
 
     let test_cases = vec![

@@ -1,11 +1,9 @@
-use std::net::TcpListener;
-
 use once_cell::sync::Lazy;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
+use uuid::Uuid;
 use z2p::{
-    configuration::{DatabaseSettings, Settings},
-    email_client::EmailClient,
-    startup::run,
+    configuration::{get_config, DatabaseSettings},
+    startup::{get_connection_pool, Application},
     telemetry::{get_subscriber, init_subscriber},
 };
 
@@ -39,35 +37,30 @@ static TRACING: Lazy<()> = Lazy::new(|| {
 });
 
 // spawn_app launches application in the background.
-pub async fn spawn_app(config: &Settings) -> TestApp {
+pub async fn spawn_app() -> TestApp {
     // the first time initialise is called the code in tracing is invoked otherwise we skip.
     Lazy::force(&TRACING);
 
-    let listener = TcpListener::bind("127.0.0.1:0")
-        .expect("failed to bind to random port");
-    let port = listener.local_addr().unwrap().port();
-    let addr = format!("http://127.0.0.1:{}", port);
+    let config = {
+        let mut c = get_config().expect("failed to read configuration");
+        c.database.database_name = Uuid::new_v4().to_string();
+        c.application.port = 0;
+        c
+    };
 
-    let conn_pool = configure_db(&config.database).await;
+    configure_db(&config.database).await;
 
-    let sender_email =
-        config.email.sender().expect("inavlid sender email address");
-    let timeout = config.email.timeout();
-    let email_client = EmailClient::new(
-        config.email.base_url.clone(),
-        sender_email,
-        config.email.auth_token.to_owned(),
-        timeout,
-    );
+    let application = Application::build(config.clone())
+        .await
+        .expect("failed to build application");
 
-    let server = run(listener, conn_pool.clone(), email_client)
-        .expect("failed to bind address");
+    let address = format!("http://127.0.0.1:{}", application.port());
 
-    let _ = tokio::spawn(server);
+    let _ = tokio::spawn(application.run_until_stopped());
 
     TestApp {
-        address: addr,
-        pool: conn_pool,
+        address,
+        pool: get_connection_pool(&config.database),
     }
 }
 
