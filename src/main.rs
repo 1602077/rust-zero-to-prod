@@ -25,10 +25,12 @@ async fn main() -> std::io::Result<()> {
 
     let sender_email =
         config.email.sender().expect("inavlid sender email address");
+    let timeout = config.email.timeout();
     let email_client = EmailClient::new(
         config.email.base_url,
         sender_email,
         config.email.auth_token,
+        timeout,
     );
 
     startup::run(listener, connection_pool, email_client)?.await

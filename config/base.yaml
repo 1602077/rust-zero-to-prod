@@ -10,3 +10,4 @@ email:
   base_url: "localhost"
   sender_email: "not-an-email@yyy.com"
   auth_token: "super-secret-token"
+  timeout_milliseconds: 1000

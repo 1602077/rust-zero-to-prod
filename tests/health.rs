@@ -53,11 +53,12 @@ async fn spawn_app(config: &Settings) -> TestApp {
 
     let sender_email =
         config.email.sender().expect("inavlid sender email address");
-
+    let timeout = config.email.timeout();
     let email_client = EmailClient::new(
         config.email.base_url.clone(),
         sender_email,
         config.email.auth_token.to_owned(),
+        timeout,
     );
 
     let server = run(listener, conn_pool.clone(), email_client)
