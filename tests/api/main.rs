@@ -1,3 +1,4 @@
 mod health;
 mod helpers;
-mod subscription;
+mod subscriptions;
+mod subscriptions_confirm;

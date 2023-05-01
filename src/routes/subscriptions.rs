@@ -43,22 +43,7 @@ pub async fn subscribe(
         return HttpResponse::InternalServerError().finish();
     }
 
-    let confirmation_link = "https://made-up-domain.com/subscriptions/confirm";
-
-    if email_client
-        .send_email(
-            new_subscriber.email,
-            "welcome",
-            &format!(
-                "Weclome to our newsletter!<br /> \
-                Click <a href=\"{}\">here</a> to confirm your subscription.",
-                confirmation_link
-            ),
-            &format!(
-                "Weclome to our newsletter!\n Visit {} to confirm your subscription.",
-                confirmation_link
-            ),
-        )
+    if send_confirmation_email(&email_client, new_subscriber)
         .await
         .is_err()
     {
@@ -85,7 +70,7 @@ pub async fn insert_subscriber(
         new_subscriber.email.as_ref(),
         new_subscriber.name.as_ref(),
         chrono::Utc::now(),
-        "confirmed"
+        "pending_confirmation"
     )
     .execute(pool)
     .await
@@ -95,4 +80,30 @@ pub async fn insert_subscriber(
     })?;
 
     Ok(())
+}
+
+#[tracing::instrument(
+    name = "send a confirmation email to new subscriber",
+    skip(email_client, new_subscriber)
+)]
+pub async fn send_confirmation_email(
+    email_client: &EmailClient,
+    new_subscriber: NewSubscriber,
+) -> Result<(), reqwest::Error> {
+    let confirmation_link =
+        "https://www.made-up-domain.com/subscriptions/confirm";
+
+    let html_body= &format!( 
+        "Weclome to our newsletter!<br />Click <a href=\"{}\">here</a> to confirm your subscription.", 
+        confirmation_link
+    );
+
+    let text_body = &format!(
+        "Weclome to our newsletter!\n Visit {} to confirm your subscription.",
+        confirmation_link
+    );
+
+    email_client
+        .send_email(new_subscriber.email, "welcome", html_body, text_body)
+        .await
 }

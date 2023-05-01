@@ -55,12 +55,20 @@ pub async fn spawn_app() -> TestApp {
 
     let address = format!("http://127.0.0.1:{}", application.port());
 
+    // api_client allows for taking advantage of connection pooling.
+    let api_client = reqwest::Client::builder()
+        .redirect(reqwest::redirect::Policy::none())
+        .pool_idle_timeout(std::time::Duration::from_millis(500))
+        .build()
+        .unwrap();
+
     let _ = tokio::spawn(application.run_until_stopped());
 
     TestApp {
         address,
         pool: get_connection_pool(&config.database),
         email_server,
+        api_client,
     }
 }
 
@@ -92,11 +100,12 @@ pub struct TestApp {
     pub address: String,
     pub pool: PgPool,
     pub email_server: MockServer,
+    pub api_client: reqwest::Client,
 }
 
 impl TestApp {
     pub async fn health(&self) -> reqwest::Response {
-        reqwest::Client::new()
+        self.api_client
             .get(&format!("{}/health", &self.address))
             .send()
             .await
@@ -104,7 +113,7 @@ impl TestApp {
     }
 
     pub async fn post_subscriptions(&self, body: String) -> reqwest::Response {
-        reqwest::Client::new()
+        self.api_client
             .post(&format!("{}/subscriptions", &self.address))
             .header("Content-Type", "application/x-www-form-urlencoded")
             .body(body)
