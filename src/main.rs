@@ -1,21 +1,31 @@
-use z2p::{configuration::get_config, startup::Application, telemetry};
+use std::net::TcpListener;
+
+use sqlx::postgres::PgPoolOptions;
+use zero2prod::{
+    configuration::get_configuration,
+    startup::run,
+    telemetry::{get_subscriber, init_subscriber},
+};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
-    let subscriber = telemetry::get_subscriber(
-        "zero2prod".into(),
-        "info".into(),
-        std::io::stdout,
+    let subscriber =
+        get_subscriber("zero2prod".into(), "info".into(), std::io::stdout);
+    init_subscriber(subscriber);
+
+    let configuration =
+        get_configuration().expect("Failed to read configuration.");
+    let connection_pool = PgPoolOptions::new()
+        .acquire_timeout(std::time::Duration::from_secs(2))
+        .connect_with(configuration.database.with_db())
+        .await
+        .expect("Failed to connect to Postgres.");
+
+    let address = format!(
+        "{}:{}",
+        configuration.application.host, configuration.application.port
     );
-
-    telemetry::init_subscriber(subscriber);
-
-    let config = get_config().expect("failed to read config");
-
-    Application::build(config)
-        .await?
-        .run_until_stopped()
-        .await?;
-
+    let listener = TcpListener::bind(address)?;
+    run(listener, connection_pool)?.await?;
     Ok(())
 }
