@@ -24,10 +24,15 @@ impl SubscriberName {
 
         // Iterate over all characters in the input `s` to check if any of them matches
         // one of the characters in the forbidden array.
-        let forbidden_characters = ['/', '(', ')', '"', '<', '>', '\\', '{', '}'];
-        let contains_forbidden_characters = s.chars().any(|g| forbidden_characters.contains(&g));
+        let forbidden_characters =
+            ['/', '(', ')', '"', '<', '>', '\\', '{', '}'];
+        let contains_forbidden_characters =
+            s.chars().any(|g| forbidden_characters.contains(&g));
 
-        if is_empty_or_whitespace || is_too_long || contains_forbidden_characters {
+        if is_empty_or_whitespace
+            || is_too_long
+            || contains_forbidden_characters
+        {
             Err(format!("{} is not a valid subscriber name.", s))
         } else {
             Ok(Self(s))
@@ -43,8 +48,9 @@ impl AsRef<str> for SubscriberName {
 
 #[cfg(test)]
 mod tests {
-    use crate::domain::SubscriberName;
     use claims::{assert_err, assert_ok};
+
+    use crate::domain::SubscriberName;
 
     #[test]
     fn a_256_grapheme_long_name_is_valid() {

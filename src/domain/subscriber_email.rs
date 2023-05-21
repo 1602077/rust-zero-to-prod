@@ -21,10 +21,11 @@ impl AsRef<str> for SubscriberEmail {
 
 #[cfg(test)]
 mod tests {
-    use super::SubscriberEmail;
     use claims::assert_err;
     use fake::faker::internet::en::SafeEmail;
     use fake::Fake;
+
+    use super::SubscriberEmail;
 
     #[test]
     fn empty_string_is_rejected() {
@@ -55,7 +56,9 @@ mod tests {
     }
 
     #[quickcheck_macros::quickcheck]
-    fn valid_emails_are_parsed_successfully(valid_email: ValidEmailFixture) -> bool {
+    fn valid_emails_are_parsed_successfully(
+        valid_email: ValidEmailFixture,
+    ) -> bool {
         SubscriberEmail::parse(valid_email.0).is_ok()
     }
 }

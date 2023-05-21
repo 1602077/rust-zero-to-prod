@@ -3,7 +3,6 @@ use secrecy::{ExposeSecret, Secret};
 
 use crate::domain::SubscriberEmail;
 
-#[derive(Debug)]
 pub struct EmailClient {
     http_client: Client,
     base_url: String,
@@ -124,7 +123,6 @@ mod tests {
 
     #[tokio::test]
     async fn send_email_sends_the_expected_request() {
-        // Arrange
         let mock_server = MockServer::start().await;
         let email_client = email_client(mock_server.uri());
 
@@ -138,17 +136,13 @@ mod tests {
             .mount(&mock_server)
             .await;
 
-        // Act
         let _ = email_client
             .send_email(email(), &subject(), &content(), &content())
             .await;
-
-        // Assert
     }
 
     #[tokio::test]
     async fn send_email_succeeds_if_the_server_returns_200() {
-        // Arrange
         let mock_server = MockServer::start().await;
         let email_client = email_client(mock_server.uri());
 
@@ -158,40 +152,33 @@ mod tests {
             .mount(&mock_server)
             .await;
 
-        // Act
         let outcome = email_client
             .send_email(email(), &subject(), &content(), &content())
             .await;
 
-        // Assert
         assert_ok!(outcome);
     }
 
     #[tokio::test]
     async fn send_email_fails_if_the_server_returns_500() {
-        // Arrange
         let mock_server = MockServer::start().await;
         let email_client = email_client(mock_server.uri());
 
         Mock::given(any())
-            // Not a 200 anymore!
             .respond_with(ResponseTemplate::new(500))
             .expect(1)
             .mount(&mock_server)
             .await;
 
-        // Act
         let outcome = email_client
             .send_email(email(), &subject(), &content(), &content())
             .await;
 
-        // Assert
         assert_err!(outcome);
     }
 
     #[tokio::test]
     async fn send_email_times_out_if_the_server_takes_too_long() {
-        // Arrange
         let mock_server = MockServer::start().await;
         let email_client = email_client(mock_server.uri());
 
@@ -203,12 +190,10 @@ mod tests {
             .mount(&mock_server)
             .await;
 
-        // Act
         let outcome = email_client
             .send_email(email(), &subject(), &content(), &content())
             .await;
 
-        // Assert
         assert_err!(outcome);
     }
 }
