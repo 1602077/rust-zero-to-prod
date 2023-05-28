@@ -1,7 +1,7 @@
 use wiremock::matchers::{any, method, path};
 use wiremock::{Mock, ResponseTemplate};
 
-use crate::helpers::{spawn_app, TestApp};
+use crate::helpers::{spawn_app, ConfirmationLinks, TestApp};
 
 #[tokio::test]
 async fn newsletters_are_not_delivered_to_unconfirmed_subscribers() {
@@ -32,7 +32,37 @@ async fn newsletters_are_not_delivered_to_unconfirmed_subscribers() {
     assert_eq!(resp.status().as_u16(), 200);
 }
 
-async fn create_unconfirmed_subscriber(app: &TestApp) {
+#[tokio::test]
+async fn newsletters_are_delivered_to_confirmed_subscribers() {
+    let app = spawn_app().await;
+    create_confirmed_subscriber(&app).await;
+
+    Mock::given(path("/email"))
+        .and(method("POST"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(1)
+        .mount(&app.email_server)
+        .await;
+
+    let newsletter_req_body = serde_json::json!({
+        "title": "Newsletter Title",
+        "content": {
+            "text": "newsletter body as plain text",
+            "html": "<p>as html</p>",
+        }
+    });
+
+    let resp = reqwest::Client::new()
+        .post(&format!("{}/newsletters", &app.address))
+        .json(&newsletter_req_body)
+        .send()
+        .await
+        .expect("failed to send request.");
+
+    assert_eq!(resp.status().as_u16(), 200);
+}
+
+async fn create_unconfirmed_subscriber(app: &TestApp) -> ConfirmationLinks {
     let body = "name=j&email=j%40mail.com";
 
     let _mock_guard = Mock::given(path("/email"))
@@ -45,6 +75,25 @@ async fn create_unconfirmed_subscriber(app: &TestApp) {
 
     app.post_subscriptions(body.into())
         .await
+        .error_for_status()
+        .unwrap();
+
+    // inspect requests received by mock and pull out confirmation link.
+    let email_request = &app
+        .email_server
+        .received_requests()
+        .await
+        .unwrap()
+        .pop()
+        .unwrap();
+
+    app.get_confirmation_links(&email_request)
+}
+async fn create_confirmed_subscriber(app: &TestApp) {
+    let confirmation_link = create_unconfirmed_subscriber(app).await;
+    reqwest::get(confirmation_link.html)
+        .await
+        .unwrap()
         .error_for_status()
         .unwrap();
 }
