@@ -22,12 +22,7 @@ async fn newsletters_are_not_delivered_to_unconfirmed_subscribers() {
         }
     });
 
-    let resp = reqwest::Client::new()
-        .post(&format!("{}/newsletters", &app.address))
-        .json(&newsletter_req_body)
-        .send()
-        .await
-        .expect("failed to send request.");
+    let resp = app.post_newsletters(newsletter_req_body).await;
 
     assert_eq!(resp.status().as_u16(), 200);
 }
@@ -52,14 +47,42 @@ async fn newsletters_are_delivered_to_confirmed_subscribers() {
         }
     });
 
-    let resp = reqwest::Client::new()
-        .post(&format!("{}/newsletters", &app.address))
-        .json(&newsletter_req_body)
-        .send()
-        .await
-        .expect("failed to send request.");
+    let resp = app.post_newsletters(newsletter_req_body).await;
 
     assert_eq!(resp.status().as_u16(), 200);
+}
+
+#[tokio::test]
+async fn newsletters_returns_400_for_invalid_data() {
+    let app = spawn_app().await;
+    let test_cases = vec![
+        (
+            serde_json::json!({
+                "content": {
+                    "text": "newsletters plain text",
+                    "html": "<p>this ones html</p>",
+                }
+            }),
+            "missing title",
+        ),
+        (
+            serde_json::json!({
+                "title": "what a title",
+            }),
+            "missing content",
+        ),
+    ];
+
+    for (invalid_body, error_message) in test_cases {
+        let resp = app.post_newsletters(invalid_body).await;
+
+        assert_eq!(
+            400,
+            resp.status().as_u16(),
+            "api did not fail with 400 bad request for a payload of {}",
+            error_message
+        )
+    }
 }
 
 async fn create_unconfirmed_subscriber(app: &TestApp) -> ConfirmationLinks {
