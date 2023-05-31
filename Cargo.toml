@@ -15,6 +15,7 @@ name = "zero2prod"
 [dependencies]
 actix-web = "4.3.1"
 anyhow = "1.0.40"
+base64 = "0.21.2"
 chrono = { version = "0.4.24", default-features = false, features = ["clock"] }
 config = { version = "0.13.3", default-features = false, features = ["yaml"] }
 log = "0.4.17"
