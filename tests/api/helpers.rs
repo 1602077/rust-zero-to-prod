@@ -142,6 +142,7 @@ pub async fn spawn_app() -> TestApp {
         port: application_port,
         db_pool: get_connection_pool(&configuration.database),
         email_server,
+        test_user: TestUser::generate(),
     };
 
     test_app.test_user.store(&test_app.db_pool).await;
