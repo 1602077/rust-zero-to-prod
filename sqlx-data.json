@@ -1,26 +1,5 @@
 {
   "db": "PostgreSQL",
-  "2998b2efb2ea4c121816981aa7cca16a6988462df79f4b29a8c767d228a63488": {
-    "describe": {
-      "columns": [
-        {
-          "name": "user_id",
-          "ordinal": 0,
-          "type_info": "Uuid"
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Left": [
-          "Text",
-          "Text"
-        ]
-      }
-    },
-    "query": "\n        SELECT user_id\n        FROM users\n        WHERE username = $1 AND password_hash = $2\n        "
-  },
   "51c9c995452d3359e3da7e2f2ff8a6e68690f740a36d2a32ec7c40b08931ebdb": {
     "describe": {
       "columns": [],
@@ -35,6 +14,38 @@
       }
     },
     "query": "\n    INSERT INTO subscriptions (id, email, name, subscribed_at, status)\n    VALUES ($1, $2, $3, $4, 'pending_confirmation')\n            "
+  },
+  "675ad448861c5ac99768b95d341f0db11a052276755445fd0d7aab667c9368d8": {
+    "describe": {
+      "columns": [
+        {
+          "name": "user_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "password_hash",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "salt",
+          "ordinal": 2,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "\n        SELECT user_id, password_hash, salt\n        FROM users\n        WHERE username = $1 \n        "
   },
   "753c8ecfac0ea7d052e60cb582e3b3ebac5e50eb133152712ca18ab5d5e202f3": {
     "describe": {
