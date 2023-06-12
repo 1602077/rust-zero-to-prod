@@ -9,7 +9,9 @@ use tracing_actix_web::TracingLogger;
 
 use crate::configuration::{DatabaseSettings, Settings};
 use crate::email_client::EmailClient;
-use crate::routes::{confirm, health_check, publish_newsletter, subscribe};
+use crate::routes::{
+    confirm, health_check, home, login_form, publish_newsletter, subscribe,
+};
 
 pub struct Application {
     port: u16,
@@ -78,7 +80,9 @@ fn run(
     let server = HttpServer::new(move || {
         App::new()
             .wrap(TracingLogger::default())
+            .route("/", web::get().to(home))
             .route("/health_check", web::get().to(health_check))
+            .route("/login", web::get().to(login_form))
             .route("/newsletters", web::post().to(publish_newsletter))
             .route("/subscriptions", web::post().to(subscribe))
             .route("/subscriptions/confirm", web::get().to(confirm))
