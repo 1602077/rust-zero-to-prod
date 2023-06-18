@@ -57,6 +57,7 @@ pub async fn validate_credentials(
         .ok_or_else(|| anyhow!("unknown username."))
         .map_err(AuthError::InvalidCredentials)
 }
+
 #[tracing::instrument(
     name = "verify password hash",
     skip(expected_password_hash, password_candidate)

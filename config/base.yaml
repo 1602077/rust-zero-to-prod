@@ -1,6 +1,8 @@
 application:
   port: 8000
   host: 0.0.0.0
+  # hmac_secret should be set in cloud environments using `APP_APPLICATION_HMAC_SECRET`.
+  hmac_secret: EuIaSkaiNxTeRbCQ1Q5EYy2UUJqXmppoeG4Rz0e__a8ysku2Nn
 database:
   host: "127.0.0.1"
   port: 5432
