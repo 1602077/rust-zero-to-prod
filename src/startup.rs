@@ -16,10 +16,6 @@ use tracing_actix_web::TracingLogger;
 use crate::configuration::{DatabaseSettings, Settings};
 use crate::email_client::EmailClient;
 use crate::routes;
-use crate::routes::{
-    admin_dashboard, change_password, change_password_form, confirm,
-    health_check, home, login, login_form, publish_newsletter, subscribe,
-};
 
 pub struct Application {
     port: u16,
@@ -104,7 +100,7 @@ async fn run(
                 secret_key.clone(),
             ))
             .wrap(TracingLogger::default())
-            .route("/", web::get().to(home))
+            .route("/", web::get().to(routes::home))
             .service(
                 web::scope("/admin")
                     .route("/dashboard", web::get().to(routes::admin_dashboard))
@@ -118,11 +114,21 @@ async fn run(
                     ),
             )
             .route("/health_check", web::get().to(routes::health_check))
-            .route("/login", web::get().to(routes::login_form))
-            .route("/login", web::post().to(routes::login))
+            .service(
+                web::scope("/login")
+                    .route("", web::get().to(routes::login_form))
+                    .route("", web::post().to(routes::login)),
+            )
+            // .route("/login", web::get().to(routes::login_form))
+            // .route("/login", web::post().to(routes::login))
             .route("/newsletters", web::post().to(routes::publish_newsletter))
-            .route("/subscriptions", web::post().to(routes::subscribe))
-            .route("/subscriptions/confirm", web::get().to(routes::confirm))
+            .service(
+                web::scope("/subscriptions")
+                    .route("", web::post().to(routes::subscribe))
+                    .route("/confirm", web::get().to(routes::confirm)),
+            )
+            // .route("/subscriptions", web::post().to(routes::subscribe))
+            // .route("/subscriptions/confirm", web::get().to(routes::confirm))
             .app_data(db_pool.clone())
             .app_data(email_client.clone())
             .app_data(base_url.clone())
