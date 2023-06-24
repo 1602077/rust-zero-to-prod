@@ -15,9 +15,10 @@ use tracing_actix_web::TracingLogger;
 
 use crate::configuration::{DatabaseSettings, Settings};
 use crate::email_client::EmailClient;
+use crate::routes;
 use crate::routes::{
-    admin_dashboard, confirm, health_check, home, login, login_form,
-    publish_newsletter, subscribe,
+    admin_dashboard, change_password, change_password_form, confirm,
+    health_check, home, login, login_form, publish_newsletter, subscribe,
 };
 
 pub struct Application {
@@ -106,14 +107,22 @@ async fn run(
             .route("/", web::get().to(home))
             .service(
                 web::scope("/admin")
-                    .route("/dashboard", web::get().to(admin_dashboard)),
+                    .route("/dashboard", web::get().to(routes::admin_dashboard))
+                    .route(
+                        "/password",
+                        web::get().to(routes::change_password_form),
+                    )
+                    .route(
+                        "/password",
+                        web::post().to(routes::change_password),
+                    ),
             )
-            .route("/health_check", web::get().to(health_check))
-            .route("/login", web::get().to(login_form))
-            .route("/login", web::post().to(login))
-            .route("/newsletters", web::post().to(publish_newsletter))
-            .route("/subscriptions", web::post().to(subscribe))
-            .route("/subscriptions/confirm", web::get().to(confirm))
+            .route("/health_check", web::get().to(routes::health_check))
+            .route("/login", web::get().to(routes::login_form))
+            .route("/login", web::post().to(routes::login))
+            .route("/newsletters", web::post().to(routes::publish_newsletter))
+            .route("/subscriptions", web::post().to(routes::subscribe))
+            .route("/subscriptions/confirm", web::get().to(routes::confirm))
             .app_data(db_pool.clone())
             .app_data(email_client.clone())
             .app_data(base_url.clone())
