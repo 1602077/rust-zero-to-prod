@@ -1,6 +1,7 @@
 use argon2::password_hash::SaltString;
 use argon2::{Algorithm, Argon2, Params, PasswordHasher, Version};
 use once_cell::sync::Lazy;
+use serde::Serialize;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
 use wiremock::MockServer;
@@ -37,7 +38,7 @@ impl TestApp {
             .body(body)
             .send()
             .await
-            .expect("Failed to execute request.")
+            .expect(ERR_API_REQUEST_FAILED)
     }
 
     /// Extract the confirmation links embedded in the request to the email API.
@@ -81,7 +82,7 @@ impl TestApp {
             .json(&body)
             .send()
             .await
-            .expect("failed to execute request.")
+            .expect(ERR_API_REQUEST_FAILED)
     }
 
     pub async fn post_login<Body>(&self, body: &Body) -> reqwest::Response
@@ -93,7 +94,7 @@ impl TestApp {
             .form(body)
             .send()
             .await
-            .expect("Failed to execute request")
+            .expect(ERR_API_REQUEST_FAILED)
     }
 
     // tests only look at html page currently, therefore do not need to expose
@@ -103,7 +104,7 @@ impl TestApp {
             .get(&format!("{}/login", &self.address))
             .send()
             .await
-            .expect("failed to execute request")
+            .expect(ERR_API_REQUEST_FAILED)
             .text()
             .await
             .unwrap()
@@ -114,13 +115,38 @@ impl TestApp {
             .get(&format!("{}/admin/dashboard", &self.address))
             .send()
             .await
-            .expect("failed to execute request")
+            .expect(ERR_API_REQUEST_FAILED)
     }
 
     pub async fn get_admin_dashboard_html(&self) -> String {
         self.get_admin_dashboard().await.text().await.unwrap()
     }
+
+    pub async fn get_change_password(&self) -> reqwest::Response {
+        self.api_client
+            .get(&format!("{}/admin/password", &self.address))
+            .send()
+            .await
+            .expect(ERR_API_REQUEST_FAILED)
+    }
+
+    pub async fn post_change_password<Body>(
+        &self,
+        body: &Body,
+    ) -> reqwest::Response
+    where
+        Body: serde::Serialize,
+    {
+        self.api_client
+            .post(&format!("{}/admin/password", &self.address))
+            .form(body)
+            .send()
+            .await
+            .expect(ERR_API_REQUEST_FAILED)
+    }
 }
+
+const ERR_API_REQUEST_FAILED: &'static str = "Failed to execute request.";
 
 impl TestUser {
     pub fn generate() -> Self {
