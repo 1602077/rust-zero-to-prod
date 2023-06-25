@@ -144,6 +144,10 @@ impl TestApp {
             .await
             .expect(ERR_API_REQUEST_FAILED)
     }
+
+    pub async fn post_change_password_html(&self) -> String {
+        self.get_change_password().await.text().await.unwrap()
+    }
 }
 
 const ERR_API_REQUEST_FAILED: &'static str = "Failed to execute request.";
