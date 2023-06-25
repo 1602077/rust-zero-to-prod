@@ -1,4 +1,5 @@
 use uuid::Uuid;
+use zero2prod::routes::{MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH};
 
 use crate::helpers::spawn_app;
 use crate::login::assert_is_redirect_to;
@@ -87,4 +88,37 @@ async fn current_password_must_be_valid() {
     // act: follow the redirect
     let html_page = app.post_change_password_html().await;
     assert!(html_page.contains("<p><i>Current password is incorrect.</i></p>"));
+}
+
+#[tokio::test]
+async fn validate_new_password_is_in_correct_length_range() {
+    let app = spawn_app().await;
+
+    // too short a password.
+    let new_password = "aaa".to_string();
+
+    // act: login
+    app.post_login(&serde_json::json! ({
+        "username": &app.test_user.username,
+        "password": &app.test_user.password,
+    }))
+    .await;
+
+    // act: try to change password
+    let resp = app
+        .post_change_password(&serde_json::json!({
+            "current_password": &app.test_user.password,
+            "new_password": new_password,
+            "new_password_validate": new_password,
+        }))
+        .await;
+
+    assert_is_redirect_to(&resp, "/admin/password");
+
+    // act: follow the redirect
+    let html_page = app.post_change_password_html().await;
+    assert!(html_page.contains(&format!(
+        "<p><i>New password must be between {} and {} characters.</i></p>",
+        MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH,
+    )))
 }
