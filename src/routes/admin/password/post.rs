@@ -36,8 +36,7 @@ pub async fn change_password(
         return Ok(seeother("/admin/password"));
     }
     let password_len = form.new_password.expose_secret().len();
-    if password_len < MIN_PASSWORD_LENGTH || password_len > MAX_PASSWORD_LENGTH
-    {
+    if !(MIN_PASSWORD_LENGTH..=MAX_PASSWORD_LENGTH).contains(&password_len) {
         FlashMessage::error(format!(
             "New password must be between {} and {} characters.",
             MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH,
