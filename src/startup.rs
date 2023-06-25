@@ -104,6 +104,7 @@ async fn run(
             .service(
                 web::scope("/admin")
                     .route("/dashboard", web::get().to(routes::admin_dashboard))
+                    .route("/logout", web::post().to(routes::logout))
                     .route(
                         "/password",
                         web::get().to(routes::change_password_form),
