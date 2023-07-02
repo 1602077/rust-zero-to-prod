@@ -8,11 +8,13 @@ use actix_web::web::Data;
 use actix_web::{web, App, HttpServer};
 use actix_web_flash_messages::storage::CookieMessageStore;
 use actix_web_flash_messages::FlashMessagesFramework;
+use actix_web_lab::middleware::from_fn;
 use secrecy::{ExposeSecret, Secret};
 use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
 use tracing_actix_web::TracingLogger;
 
+use crate::authentication::reject_anonymous_users;
 use crate::configuration::{DatabaseSettings, Settings};
 use crate::email_client::EmailClient;
 use crate::routes;
@@ -103,6 +105,7 @@ async fn run(
             .route("/", web::get().to(routes::home))
             .service(
                 web::scope("/admin")
+                    .wrap(from_fn(reject_anonymous_users))
                     .route("/dashboard", web::get().to(routes::admin_dashboard))
                     .route("/logout", web::post().to(routes::logout))
                     .route(
