@@ -12,4 +12,4 @@ docker run \
 	--name "redis_$(date '+%s')" \
 	redis:7
 
-echo >&2 "\nredis is running"
+echo "redis is running" >&2

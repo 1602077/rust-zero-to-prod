@@ -112,10 +112,16 @@ async fn run(
                         "/password",
                         web::get().to(routes::change_password_form),
                     )
+                    .route("/password", web::post().to(routes::change_password))
                     .route(
-                        "/password",
-                        web::post().to(routes::change_password),
+                        "/newsletter",
+                        web::get().to(routes::publish_newsletter_form),
                     ),
+                //
+                // .route(
+                //     "/newsletter",
+                //     web::post().to(routes::publish_newsletter),
+                // ),
             )
             .route("/health_check", web::get().to(routes::health_check))
             .service(
@@ -123,7 +129,7 @@ async fn run(
                     .route("", web::get().to(routes::login_form))
                     .route("", web::post().to(routes::login)),
             )
-            .route("/newsletters", web::post().to(routes::publish_newsletter))
+            .route("/newsletter", web::post().to(routes::publish_newsletter))
             .service(
                 web::scope("/subscriptions")
                     .route("", web::post().to(routes::subscribe))
